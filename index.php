@@ -23,10 +23,7 @@ $products = $pdo->query("SELECT * FROM products")->fetchAll();
                     <p><?= htmlspecialchars($product["name"]) ?></p>
                     <p class="price">$<?= htmlspecialchars($product["price"]) ?></p>
                     <form method="GET" action="view.php">
-                        <input type="hidden" name="name" value="<?= htmlspecialchars($product["name"]) ?>">
-                        <input type="hidden" name="price" value="<?= htmlspecialchars($product["price"]) ?>">
-                        <input type="hidden" name="image" value="<?= htmlspecialchars($product["image"]) ?>">
-                        <input type="hidden" name="description" value="<?= htmlspecialchars($product["description"]) ?>">
+                        <input type="hidden" name="slug" value="<?= htmlspecialchars($product['slug']) ?>">
                         <button type="submit">View Product</button>
                     </form>
                 </div>
