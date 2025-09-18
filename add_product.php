@@ -1,3 +1,11 @@
+<?php
+session_start();
+if (!isset($_SESSION['user'])) {
+    header("Location: login.php");
+    exit;
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,6 +14,10 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div style="text-align: right; margin: 10px;">
+        <a href="logout.php"><button type="button">Logout</button></a>
+    </div>
+
     <div class="menu">
         <div class="catalog-header">Add Product</div>
         <div class="view-container">
@@ -24,8 +36,9 @@
 
                 <button type="submit">Save Product</button>
             </form>
-            <div>
-                <a href="index.php"><button>Back to Catalog</button></a>
+
+            <div style="margin-top:10px;">
+                <a href="index.php"><button type="button">Back to Catalog</button></a>
             </div>
         </div>
     </div>

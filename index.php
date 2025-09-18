@@ -11,6 +11,9 @@ $products = $pdo->query("SELECT * FROM products")->fetchAll();
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div style="text-align: right; margin: 10px;">
+        <a href="logout.php"><button type="button">Logout</button></a>
+    </div>
     <div class="menu">
         <div class="catalog-header">Product Catalog</div>
         <div style="text-align: center; margin: 10px;">
@@ -19,13 +22,12 @@ $products = $pdo->query("SELECT * FROM products")->fetchAll();
         <div class="container">
             <?php foreach ($products as $product): ?>
                 <div class="product">
-                    <img class="photos" src="<?= htmlspecialchars($product["image"]) ?>">
+                    <img class="photos" src="<?= htmlspecialchars($product["image"]) ?>" alt="<?= htmlspecialchars($product["name"]) ?>">
                     <p><?= htmlspecialchars($product["name"]) ?></p>
                     <p class="price">$<?= htmlspecialchars($product["price"]) ?></p>
-                    <form method="GET" action="view.php">
-                        <input type="hidden" name="slug" value="<?= htmlspecialchars($product['slug']) ?>">
-                        <button type="submit">View Product</button>
-                    </form>
+                    <a href="view.php?slug=<?= urlencode($product['slug']) ?>">
+                        <button type="button">View Product</button>
+                    </a>
                 </div>
             <?php endforeach; ?>
         </div>
