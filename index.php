@@ -1,4 +1,6 @@
 <?php
+session_start();
+
 require 'db.php';
 
 $products = $pdo->query("SELECT * FROM products")->fetchAll();
@@ -12,13 +14,22 @@ $products = $pdo->query("SELECT * FROM products")->fetchAll();
 </head>
 <body>
     <div style="text-align: right; margin: 10px;">
-        <a href="logout.php"><button type="button">Logout</button></a>
+        <?php if (isset($_SESSION['user'])): ?>
+            <a href="logout.php"><button type="button">Logout</button></a>
+        <?php else: ?>
+            <a href="login.php"><button type="button">Login</button></a>
+        <?php endif; ?>
     </div>
+
     <div class="menu">
         <div class="catalog-header">Product Catalog</div>
+
         <div style="text-align: center; margin: 10px;">
-            <a href="add_product.php"><button>Add Product</button></a>
+            <?php if (isset($_SESSION['user'])): ?>
+                <a href="add_product.php"><button>Add Product</button></a>
+            <?php endif; ?>
         </div>
+
         <div class="container">
             <?php foreach ($products as $product): ?>
                 <div class="product">
