@@ -1,25 +1,30 @@
 <?php
-session_start();
+require 'security.php';
 require 'db.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = trim($_POST['username']);
-    $password = $_POST['password'];
+    $username = trim($_POST['username'] ?? '');
+    $password = $_POST['password'] ?? '';
+    $token = $_POST['_csrf'] ?? '';
 
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE username = :username");
-    $stmt->execute(['username' => $username]);
-    $user = $stmt->fetch();
-
-    if ($user && password_verify($password, $user['password'])) {
-        $_SESSION['user'] = $username;
-        header("Location: add_product.php");
-        exit;
+    if (!verify_csrf($token)) {
+        $error = "Invalid request.";
     } else {
-        $error = "Invalid credentials.";
+        $stmt = $pdo->prepare("SELECT username, password FROM users WHERE username = :username LIMIT 1");
+        $stmt->execute(['username' => $username]);
+        $user = $stmt->fetch();
+
+        if ($user && password_verify($password, $user['password'])) {
+            // login
+            $_SESSION['user'] = $user['username'];
+            header("Location: index.php");
+            exit;
+        } else {
+            $error = "Invalid credentials.";
+        }
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -31,7 +36,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="menu">
         <div class="catalog-header">Login</div>
         <div class="view-container">
-            <form method="POST">
+            <form method="POST" novalidate>
+                <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
                 <label>Username:</label><br>
                 <input type="text" name="username" required><br><br>
 
@@ -41,13 +47,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <button type="submit">Login</button>
             </form>
 
-            <!-- Qeydiyyat düymesi -->
             <p style="margin-top:10px;">Don't have an account?
                 <a href="register.php"><button type="button">Register</button></a>
             </p>
 
-            <?php if(isset($error)): ?>
-                <p style="color:red;"><?= htmlspecialchars($error) ?></p>
+            <?php if (isset($error)): ?>
+                <p style="color:red;"><?= e($error) ?></p>
             <?php endif; ?>
         </div>
     </div>

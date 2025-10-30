@@ -1,9 +1,9 @@
 <?php
-session_start();
-
+require 'security.php';
 require 'db.php';
 
-$products = $pdo->query("SELECT * FROM products")->fetchAll();
+$stmt = $pdo->query("SELECT id, name, slug, price, image FROM products ORDER BY id DESC");
+$products = $stmt->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -31,16 +31,24 @@ $products = $pdo->query("SELECT * FROM products")->fetchAll();
         </div>
 
         <div class="container">
-            <?php foreach ($products as $product): ?>
-                <div class="product">
-                    <img class="photos" src="<?= htmlspecialchars($product["image"]) ?>" alt="<?= htmlspecialchars($product["name"]) ?>">
-                    <p><?= htmlspecialchars($product["name"]) ?></p>
-                    <p class="price">$<?= htmlspecialchars($product["price"]) ?></p>
-                    <a href="view.php?slug=<?= urlencode($product['slug']) ?>">
-                        <button type="button">View Product</button>
-                    </a>
-                </div>
-            <?php endforeach; ?>
+            <?php if (!empty($products)): ?>
+                <?php foreach ($products as $product): ?>
+                    <div class="product">
+                        <img class="photos"
+                             src="<?= e(safe_image_src($product['image'])) ?>"
+                             alt="<?= e($product['name']) ?>">
+
+                        <p><?= e($product['name']) ?></p>
+                        <p class="price">$<?= e(number_format((float)$product['price'], 2, '.', '')) ?></p>
+
+                        <a href="view.php?slug=<?= urlencode($product['slug']) ?>">
+                            <button type="button">View Product</button>
+                        </a>
+                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <p>No products yet.</p>
+            <?php endif; ?>
         </div>
     </div>
 </body>
