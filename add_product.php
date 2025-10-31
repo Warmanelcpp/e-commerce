@@ -8,6 +8,37 @@ if (empty($_SESSION['user'])) {
 }
 
 $errors = [];
+function slugify(string $text): string {
+    $t = $text;
+
+    if (function_exists('iconv')) {
+        $conv = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $t);
+        if ($conv !== false) {
+            $t = $conv;
+        }
+    }
+    $t = preg_replace('~[^A-Za-z0-9]+~', '-', $t);
+    $t = trim($t, '-');
+    $t = strtolower($t);
+    $t = preg_replace('~[^a-z0-9-]+~', '', $t);
+
+    return $t !== '' ? $t : 'product';
+}
+
+function ensureUniqueSlug(PDO $pdo, string $base): string {
+    $slug = $base;
+    $i = 2;
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM products WHERE slug = ?');
+
+    while (true) {
+        $stmt->execute([$slug]);
+        if ((int)$stmt->fetchColumn() === 0) {
+            return $slug;
+        }
+        $slug = $base . '-' . $i;
+        $i++;
+    }
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $token = $_POST['_csrf'] ?? '';
@@ -28,6 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors[] = "Description too long.";
         }
 
+        $destination = null;
         if (empty($errors)) {
             if (!isset($_FILES['image']) || $_FILES['image']['error'] !== UPLOAD_ERR_OK) {
                 $errors[] = "Image upload failed.";
@@ -65,22 +97,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if (empty($errors)) {
-            $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $name), '-'));
+            $baseSlug=slugify($name);
+            $slug= ensureUniqueSlug($pdo, $baseSlug);
 
-            $stmt = $pdo->prepare("
-                INSERT INTO products (name, description, price, image, slug)
-                VALUES (:name, :description, :price, :image, :slug)
-            ");
-            $stmt->execute([
-                'name'        => $name,
-                'description' => $description,
-                'price'       => number_format((float)$price, 2, '.', ''),
-                'image'       => $destination,
-                'slug'        => $slug
-            ]);
+            try {
+                $stmt = $pdo->prepare("
+                    INSERT INTO products (name, description, price, image, slug)
+                    VALUES (:name, :description, :price, :image, :slug)
+                ");
+                $stmt->execute([
+                    'name'        => $name,
+                    'description' => $description,
+                    'price'       => number_format((float)$price, 2, '.', ''),
+                    'image'       => $destination,
+                    'slug'        => $slug
+                ]);
+                header("Location: view.php?slug=" . rawurlencode($slug));
+                exit;
 
-            header("Location: view.php?slug=" . urlencode($slug));
-            exit;
+            } catch (PDOException $e) {
+                if (($e->errorInfo[1] ?? null) === 1062) {
+                    $slug = ensureUniqueSlug($pdo, $baseSlug);
+                    $stmt = $pdo->prepare("
+                        INSERT INTO products (name, description, price, image, slug)
+                        VALUES (:name, :description, :price, :image, :slug)
+                    ");
+                    $stmt->execute([
+                        'name'        => $name,
+                        'description' => $description,
+                        'price'       => number_format((float)$price, 2, '.', ''),
+                        'image'       => $destination,
+                        'slug'        => $slug
+                    ]);
+
+                    header("Location: view.php?slug=" . rawurlencode($slug));
+                    exit;
+                }
+                throw $e;
+            }
         }
     }
 }
@@ -104,10 +158,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
 
                 <label>Product Name:</label><br>
-                <input type="text" name="name" required><br><br>
+                <input type="text" name="name" maxlength="120" required><br><br>
 
                 <label>Description:</label><br>
-                <textarea name="description" required></textarea><br><br>
+                <textarea name="description" maxlength="2000" required></textarea><br><br>
 
                 <label>Price:</label><br>
                 <input type="number" name="price" min="0.01" step="0.01" required><br><br>
